@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { interviewQuestions } from '@/data/interviewQuestions';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useCamera } from '@/hooks/useCamera';
@@ -15,6 +16,7 @@ const QUESTION_TIME = 120; // 2 minutes in seconds
 const InterviewApp: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const navigate = useNavigate();
   
   const { toast } = useToast();
   const currentQuestion = interviewQuestions[currentQuestionIndex];
@@ -36,14 +38,22 @@ const InterviewApp: React.FC = () => {
     error: cameraError,
   } = useCamera();
 
-  const handleNextQuestion = useCallback(() => {
-    // Save current answer
+  const saveCurrentAnswer = useCallback(() => {
     if (transcript) {
       setAnswers(prev => ({
         ...prev,
         [currentQuestionIndex]: transcript,
       }));
     }
+  }, [currentQuestionIndex, transcript]);
+
+  const handleNextQuestion = useCallback(() => {
+    // Save current answer
+    const updatedAnswers = {
+      ...answers,
+      [currentQuestionIndex]: transcript || answers[currentQuestionIndex] || '',
+    };
+    setAnswers(updatedAnswers);
     
     // Stop recording if active
     if (isListening) {
@@ -61,13 +71,16 @@ const InterviewApp: React.FC = () => {
         description: `Moving to question ${currentQuestionIndex + 2} of ${interviewQuestions.length}`,
       });
     } else {
+      // Interview complete - navigate to results
+      disableCamera();
+      navigate('/results', { state: { answers: updatedAnswers } });
+      
       toast({
         title: "Interview Complete!",
-        description: "You have completed all the interview questions.",
-        variant: "default",
+        description: "Redirecting to your results...",
       });
     }
-  }, [currentQuestionIndex, transcript, isListening, stopListening, resetTranscript]);
+  }, [currentQuestionIndex, transcript, answers, isListening, stopListening, resetTranscript, navigate, disableCamera, toast]);
 
   const {
     timeLeft,
@@ -101,12 +114,13 @@ const InterviewApp: React.FC = () => {
   const handleStopRecording = useCallback(() => {
     stopListening();
     stopTimer();
+    saveCurrentAnswer();
     
     toast({
       title: "Recording Stopped",
       description: "Your answer has been captured.",
     });
-  }, [stopListening, stopTimer, toast]);
+  }, [stopListening, stopTimer, saveCurrentAnswer, toast]);
 
   const handleToggleCamera = useCallback(async () => {
     if (isCameraEnabled) {
