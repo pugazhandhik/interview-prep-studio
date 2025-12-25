@@ -17,19 +17,32 @@ export const useCamera = (): UseCameraReturn => {
   const enableCamera = useCallback(async () => {
     try {
       setError(null);
+      console.log('Requesting camera access...');
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: 640, height: 480 },
         audio: false,
       });
       
+      console.log('Camera stream obtained:', stream);
       streamRef.current = stream;
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      
+      // Set enabled first so video element is rendered
       setIsEnabled(true);
+      
+      // Use setTimeout to ensure video element is in DOM
+      setTimeout(() => {
+        if (videoRef.current) {
+          console.log('Setting video source...');
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(err => {
+            console.error('Video play error:', err);
+          });
+        } else {
+          console.error('Video ref not available');
+        }
+      }, 100);
+      
     } catch (err) {
       console.error('Camera error:', err);
       setError('Failed to access camera. Please allow camera permissions.');
@@ -49,6 +62,16 @@ export const useCamera = (): UseCameraReturn => {
     
     setIsEnabled(false);
   }, []);
+
+  // Effect to set video source when enabled changes
+  useEffect(() => {
+    if (isEnabled && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(err => {
+        console.error('Video play error in effect:', err);
+      });
+    }
+  }, [isEnabled]);
 
   useEffect(() => {
     return () => {
