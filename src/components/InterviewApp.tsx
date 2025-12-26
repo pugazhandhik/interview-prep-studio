@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { interviewQuestions } from '@/data/interviewQuestions';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
@@ -16,6 +16,7 @@ const QUESTION_TIME = 120; // 2 minutes in seconds
 const InterviewApp: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [hasStarted, setHasStarted] = useState(false);
   const navigate = useNavigate();
   
   const { toast } = useToast();
@@ -38,6 +39,19 @@ const InterviewApp: React.FC = () => {
     error: cameraError,
   } = useCamera();
 
+  // Refs to hold latest values for the timer callback
+  const transcriptRef = useRef(transcript);
+  const answersRef = useRef(answers);
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  const isListeningRef = useRef(isListening);
+
+  useEffect(() => {
+    transcriptRef.current = transcript;
+    answersRef.current = answers;
+    currentQuestionIndexRef.current = currentQuestionIndex;
+    isListeningRef.current = isListening;
+  }, [transcript, answers, currentQuestionIndex, isListening]);
+
   const saveCurrentAnswer = useCallback(() => {
     if (transcript) {
       setAnswers(prev => ({
@@ -47,29 +61,40 @@ const InterviewApp: React.FC = () => {
     }
   }, [currentQuestionIndex, transcript]);
 
-  const handleNextQuestion = useCallback(() => {
+  // This will be called when time runs out
+  const handleTimeUp = useCallback(() => {
+    const currentIdx = currentQuestionIndexRef.current;
+    const currentTranscript = transcriptRef.current;
+    const currentAnswers = answersRef.current;
+    
     // Save current answer
     const updatedAnswers = {
-      ...answers,
-      [currentQuestionIndex]: transcript || answers[currentQuestionIndex] || '',
+      ...currentAnswers,
+      [currentIdx]: currentTranscript || currentAnswers[currentIdx] || '',
     };
     setAnswers(updatedAnswers);
     
     // Stop recording if active
-    if (isListening) {
+    if (isListeningRef.current) {
       stopListening();
     }
     
     // Move to next question or show completion
-    if (currentQuestionIndex < interviewQuestions.length - 1) {
+    if (currentIdx < interviewQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       resetTranscript();
-      resetTimer();
       
       toast({
-        title: "Next Question",
-        description: `Moving to question ${currentQuestionIndex + 2} of ${interviewQuestions.length}`,
+        title: "Time's Up!",
+        description: `Moving to question ${currentIdx + 2} of ${interviewQuestions.length}`,
       });
+      
+      // Auto-start recording for next question after a brief delay
+      setTimeout(() => {
+        if (isSpeechSupported) {
+          startListening();
+        }
+      }, 500);
     } else {
       // Interview complete - navigate to results
       disableCamera();
@@ -80,7 +105,7 @@ const InterviewApp: React.FC = () => {
         description: "Redirecting to your results...",
       });
     }
-  }, [currentQuestionIndex, transcript, answers, isListening, stopListening, resetTranscript, navigate, disableCamera, toast]);
+  }, [stopListening, resetTranscript, navigate, disableCamera, toast, isSpeechSupported, startListening]);
 
   const {
     timeLeft,
@@ -89,9 +114,11 @@ const InterviewApp: React.FC = () => {
     stopTimer,
     resetTimer,
     formatTime,
-  } = useTimer(QUESTION_TIME, handleNextQuestion);
+  } = useTimer(QUESTION_TIME, handleTimeUp);
 
-  const handleStartRecording = useCallback(() => {
+  const handleStart = useCallback(() => {
+    setHasStarted(true);
+    
     if (!isSpeechSupported) {
       toast({
         title: "Not Supported",
@@ -106,8 +133,8 @@ const InterviewApp: React.FC = () => {
     startTimer();
     
     toast({
-      title: "Recording Started",
-      description: "Speak your answer clearly. Timer started!",
+      title: "Interview Started",
+      description: "Speak your answer clearly. You have 2 minutes per question!",
     });
   }, [isSpeechSupported, resetTranscript, startListening, startTimer, toast]);
 
@@ -167,14 +194,14 @@ const InterviewApp: React.FC = () => {
 
         {/* Action Buttons */}
         <ActionButtons
+          hasStarted={hasStarted}
           isRecording={isListening}
           isCameraEnabled={isCameraEnabled}
           timeLeft={timeLeft}
           formatTime={formatTime}
-          onStartRecording={handleStartRecording}
+          onStart={handleStart}
           onStopRecording={handleStopRecording}
           onToggleCamera={handleToggleCamera}
-          onNextQuestion={handleNextQuestion}
         />
 
         {/* Answer Box */}
