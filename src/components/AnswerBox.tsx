@@ -20,7 +20,7 @@ const AnswerBox: React.FC<AnswerBoxProps> = ({ transcript, isListening }) => {
           </div>
         )}
       </div>
-      <div className="answer-box rounded-lg p-4 min-h-[120px] max-h-[200px] overflow-y-auto shadow-inner">
+      <div className="answer-box rounded-lg p-3 h-16 overflow-y-auto shadow-inner">
         {transcript ? (
           <p className="text-gray-800 leading-relaxed">{transcript}</p>
         ) : (
