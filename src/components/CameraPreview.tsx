@@ -9,7 +9,7 @@ interface CameraPreviewProps {
 const CameraPreview = forwardRef<HTMLVideoElement, CameraPreviewProps>(
   ({ videoRef, isEnabled }, _ref) => {
     return (
-      <div className="camera-container w-full max-w-xl h-full max-h-[360px] flex items-center justify-center overflow-hidden relative rounded-lg">
+      <div className="camera-container w-full max-w-lg aspect-video flex items-center justify-center overflow-hidden relative">
         {isEnabled ? (
           <video
             ref={videoRef}

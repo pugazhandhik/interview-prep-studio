@@ -141,61 +141,53 @@ const InterviewApp: React.FC = () => {
   }, [isCameraEnabled, enableCamera, disableCamera, cameraError, toast]);
 
   return (
-    <div className="h-screen flex items-center justify-center p-2 md:p-4 overflow-hidden">
-      <div className="glass-card w-full max-w-4xl h-full max-h-[98vh] rounded-2xl p-4 md:p-6 flex flex-col">
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-8">
+      <div className="glass-card w-full max-w-4xl rounded-3xl p-6 md:p-10 space-y-6">
         {/* Header */}
-        <div className="text-center space-y-1 flex-shrink-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
             AI Mock Interview
           </h1>
-          <p className="text-muted-foreground text-xs md:text-sm">
+          <p className="text-muted-foreground text-sm md:text-base">
             Frequently Asked CSE Interview Questions
           </p>
         </div>
 
         {/* Question Card */}
-        <div className="flex-shrink-0 mt-3">
-          <QuestionCard
-            questionNumber={currentQuestionIndex + 1}
-            question={currentQuestion.question}
-            category={currentQuestion.category}
-          />
-        </div>
+        <QuestionCard
+          questionNumber={currentQuestionIndex + 1}
+          question={currentQuestion.question}
+          category={currentQuestion.category}
+        />
 
         {/* Camera Preview */}
-        <div className="flex justify-center flex-1 min-h-0 my-3">
+        <div className="flex justify-center">
           <CameraPreview videoRef={videoRef} isEnabled={isCameraEnabled} />
         </div>
 
         {/* Action Buttons */}
-        <div className="flex-shrink-0">
-          <ActionButtons
-            isRecording={isListening}
-            isCameraEnabled={isCameraEnabled}
-            timeLeft={timeLeft}
-            formatTime={formatTime}
-            onStartRecording={handleStartRecording}
-            onStopRecording={handleStopRecording}
-            onToggleCamera={handleToggleCamera}
-            onNextQuestion={handleNextQuestion}
-          />
-        </div>
+        <ActionButtons
+          isRecording={isListening}
+          isCameraEnabled={isCameraEnabled}
+          timeLeft={timeLeft}
+          formatTime={formatTime}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording}
+          onToggleCamera={handleToggleCamera}
+          onNextQuestion={handleNextQuestion}
+        />
 
         {/* Answer Box */}
-        <div className="flex-shrink-0 mt-3">
-          <AnswerBox transcript={transcript} isListening={isListening} />
-        </div>
+        <AnswerBox transcript={transcript} isListening={isListening} />
 
         {/* Status Bar */}
-        <div className="flex-shrink-0 mt-3">
-          <StatusBar
-            timeLeft={timeLeft}
-            formatTime={formatTime}
-            currentQuestion={currentQuestionIndex + 1}
-            totalQuestions={interviewQuestions.length}
-            isRunning={isRunning}
-          />
-        </div>
+        <StatusBar
+          timeLeft={timeLeft}
+          formatTime={formatTime}
+          currentQuestion={currentQuestionIndex + 1}
+          totalQuestions={interviewQuestions.length}
+          isRunning={isRunning}
+        />
       </div>
     </div>
   );
